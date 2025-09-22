@@ -1,10 +1,10 @@
 {
-  "watch": ["src"],
+  "watch": ["backend"],
   "ext": "ts,json",
   "ignore": [
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts",
-    "src/generated/**",
+    "backend/**/*.spec.ts",
+    "backend/**/*.test.ts",
+    "backend/generated/**",
     "node_modules/**",
     "dist/**"
   ],

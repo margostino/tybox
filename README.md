@@ -1,6 +1,6 @@
 # Tybox 📦
 
-A TypeScript sandbox project with Docker-based infrastructure including PostgreSQL, Redis, WireMock, and Prisma ORM.
+A full-stack TypeScript sandbox project featuring a React frontend, Express backend, and Docker-based infrastructure with PostgreSQL, Redis, WireMock, and Prisma ORM.
 
 ## 🚀 Quick Start
 
@@ -11,8 +11,12 @@ yarn install
 # 2. Start PostgreSQL (or all services)
 ./bin/start.sh postgres  # or just ./bin/start.sh for all services
 
-# 3. Run the server (migrations apply automatically)
-yarn dev
+# 3. Run both frontend and backend
+yarn dev:all
+
+# Visit:
+# - Frontend: http://localhost:3000
+# - Backend API: http://localhost:4000
 ```
 
 ## 📋 Prerequisites
@@ -21,6 +25,22 @@ yarn dev
 - Yarn
 - Docker & Docker Compose
 - PostgreSQL client tools (optional, for debugging)
+
+## 🎨 Features
+
+### Frontend (React + Vite)
+- **Modern React** with TypeScript and Vite for fast development
+- **Quote Display** - Shows random inspirational quotes from the backend API
+- **Responsive Design** - Beautiful gradient UI that works on all devices
+- **Error Handling** - Graceful error states with retry functionality
+- **Hot Module Replacement** - Instant updates during development
+
+### Backend (Express + TypeScript)
+- **RESTful API** - Quote endpoints with full CRUD operations
+- **CORS Enabled** - Configured for frontend communication
+- **Database Ready** - Prisma ORM with PostgreSQL integration
+- **Monitoring** - Request metrics and logging with Winston
+- **Queue Support** - Redis integration with BullMQ
 
 ## 🏗️ Infrastructure
 
@@ -124,13 +144,18 @@ The server automatically applies migrations on startup:
 
 ```bash
 # Development
-yarn dev              # Start dev server with nodemon
+yarn dev              # Start backend only
+yarn dev:frontend     # Start frontend only
+yarn dev:backend      # Start backend only
+yarn dev:all          # Start both frontend and backend
 yarn dev:migrate      # Start with migrations
 
 # Building
-yarn build            # Generate Prisma Client & compile TypeScript
-yarn start            # Run compiled JavaScript
-yarn start:migrate    # Run with migrations
+yarn build            # Build both frontend and backend
+yarn build:backend    # Build backend only
+yarn build:frontend   # Build frontend only
+yarn start            # Run compiled backend
+yarn preview          # Preview built frontend
 
 # Code Quality
 yarn lint             # Run ESLint
@@ -151,24 +176,53 @@ tybox/
 ├── bin/
 │   ├── start.sh          # Start Docker services
 │   └── down.sh           # Stop Docker services
+├── frontend/             # React frontend application
+│   ├── src/
+│   │   ├── App.tsx       # Main React component
+│   │   ├── App.css       # Application styles
+│   │   └── main.tsx      # React entry point
+│   ├── index.html        # HTML template
+│   └── package.json      # Frontend dependencies
 ├── prisma/
 │   └── schema.prisma     # Database schema
-├── src/
+├── src/                  # Backend application
 │   ├── config/           # Configuration
 │   ├── generated/
 │   │   └── prisma/       # Generated Prisma Client
 │   ├── lib/
 │   │   └── database.ts   # Database initialization
 │   ├── middlewares/      # Express middlewares
-│   ├── routes/           # API routes
-│   ├── index.ts          # Application entry point
+│   ├── routes/
+│   │   ├── quotes.ts     # Quote API endpoints
+│   │   └── index.ts      # Route aggregator
+│   ├── index.ts          # Backend entry point
 │   └── prisma-example.ts # Prisma usage examples
 ├── docker-compose.yml    # Docker services configuration
+├── vite.config.ts        # Vite configuration
 ├── .env                  # Environment variables
 └── package.json          # Dependencies and scripts
 ```
 
 ## 💻 Usage Examples
+
+### API Endpoints
+
+```bash
+# Get a random quote
+curl http://localhost:4000/api/quotes/random
+
+# Get all quotes
+curl http://localhost:4000/api/quotes
+
+# Get specific quote by ID
+curl http://localhost:4000/api/quotes/1
+```
+
+### Frontend Features
+- Visit http://localhost:3000 to see the Quote App
+- Click "Get New Quote" for random inspirational quotes
+- Fully responsive design with gradient animations
+- Error handling with retry functionality
 
 ### Using Prisma in Your Code
 
@@ -230,19 +284,22 @@ This will:
 # Server
 PORT=4000
 
+# Frontend Dev Server
+VITE_PORT=3000
+
 # Redis
-REDIS_HOST="localhost"
+REDIS_HOST="localhost"  # or "host.docker.internal" when running app in Docker
 REDIS_PORT=6379
 REDIS_TIMEOUT=1000
 
 # PostgreSQL
-POSTGRES_HOST="localhost"
+POSTGRES_HOST="localhost"  # or "host.docker.internal" when running app in Docker
 POSTGRES_PORT=5432
 DATABASE_NAME=tybox
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tybox?schema=public"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tybox?schema=public&connection_limit=10"
 
 # WireMock
-WIREMOCK_HOST="localhost"
+WIREMOCK_HOST="localhost"  # or "host.docker.internal" when running app in Docker
 WIREMOCK_PORT=8080
 ```
 
@@ -276,6 +333,15 @@ WIREMOCK_PORT=8080
 
 ## 🐛 Troubleshooting
 
+### Frontend Issues
+- **Vite not starting**: Check port 3000 is free: `lsof -i :3000`
+- **API calls failing**: Ensure backend is running on port 4000
+- **CORS errors**: Check CORS configuration in `src/index.ts`
+
+### Backend Issues
+- **Nodemon restart loop**: Check `nodemon.json` excludes generated files
+- **Port already in use**: Kill process: `lsof -i :4000 | grep LISTEN`
+
 ### Migration Fails
 - Check PostgreSQL is running: `docker ps`
 - Verify DATABASE_URL in `.env`
@@ -293,6 +359,8 @@ WIREMOCK_PORT=8080
 
 ## 📚 Resources
 
+- [React Documentation](https://react.dev)
+- [Vite Documentation](https://vitejs.dev)
 - [Prisma Documentation](https://www.prisma.io/docs)
 - [Docker Compose](https://docs.docker.com/compose/)
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/)

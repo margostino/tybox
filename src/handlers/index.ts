@@ -1,1 +1,0 @@
-export { getPing } from "./getPing";
