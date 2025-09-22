@@ -1,6 +1,7 @@
 import express, { Application } from "express";
 import { logger } from "./config";
 import { env } from "./config/env";
+import { initializeDatabase } from "./lib/database";
 import { errorHandler, requestMetrics, responseHandler } from "./middlewares";
 import routes from "./routes";
 
@@ -20,8 +21,19 @@ app.use(responseHandler);
 app.use("/", routes);
 app.use(errorHandler);
 
-app.listen(PORT, async () => {
-  logger.info(`Server is running on http://localhost:${PORT}`);
-});
+async function startServer() {
+  try {
+    await initializeDatabase();
+
+    app.listen(PORT, () => {
+      logger.info(`Server is running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    logger.error("Failed to start server:", error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 export default app;

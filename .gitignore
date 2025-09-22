@@ -141,3 +141,5 @@ vite.config.ts.timestamp-*
 # Claude
 .serena/
 .claude/
+
+/src/generated/prisma
