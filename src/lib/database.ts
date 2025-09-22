@@ -17,19 +17,15 @@ export async function initializeDatabase(): Promise<PrismaClient> {
       console.log("📦 Applying database migrations...");
       execSync("npx prisma migrate deploy", { stdio: "inherit" });
     } else {
-      // In development, create migrations if needed and apply them
-      console.log("🔄 Checking database migrations...");
-      execSync("npx prisma migrate dev --skip-seed", { stdio: "inherit" });
+      // In development, skip automatic migration and generation
+      // Let the developer run migrations manually when needed
+      console.log("🔄 Skipping automatic migrations in development mode");
+      console.log("💡 Run 'yarn prisma:migrate' to apply migrations manually");
     }
 
-    // Generate Prisma Client to ensure it's up to date
-    console.log("🔧 Generating Prisma Client...");
-    execSync("npx prisma generate", { stdio: "inherit" });
-
-    console.log("✅ Database migrations applied successfully");
+    console.log("✅ Database initialization complete");
   } catch (error) {
     console.error("❌ Failed to apply migrations:", error);
-    // In development, we might want to continue even if migrations fail
     // In production, we should probably exit
     if (isProduction) {
       process.exit(1);
