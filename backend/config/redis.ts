@@ -47,7 +47,9 @@ redisStreamClient.on("reconnecting", (delay: number) =>
   logger.info("[Redis Stream Client] Reconnecting", { payload: { delay } })
 );
 
-redisBlockingClient.on("error", (err: Error) => logger.error("❌ Redis Blocking Client error:", err));
+redisBlockingClient.on("error", (err: Error) =>
+  logger.error("❌ Redis Blocking Client error:", err)
+);
 redisBlockingClient.on("disconnect", () => logger.info("[Redis Blocking Client] Disconnected"));
 redisBlockingClient.on("reconnecting", (delay: number) =>
   logger.info("[Redis Blocking Client] Reconnecting", { payload: { delay } })

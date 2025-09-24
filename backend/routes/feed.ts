@@ -5,10 +5,8 @@ import { zodParse } from "../utils";
 
 const router = Router();
 
-// Initialize the stream on startup if it doesn't exist
 const initializeStream = async () => {
   try {
-    // Check if stream exists by getting its length
     const streamLength = await redisStreamClient.xlen("feed");
     console.log(`Feed stream has ${streamLength} messages`);
 
