@@ -21,6 +21,38 @@
   font-size: 1.2rem;
 }
 
+.feed-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.clear-feed-button {
+  padding: 6px 12px;
+  background: #ff4444;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s ease;
+}
+
+.clear-feed-button:hover {
+  background: #cc0000;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 68, 68, 0.3);
+}
+
+.clear-feed-button:active {
+  transform: translateY(0);
+}
+
 .connection-status {
   display: flex;
   align-items: center;

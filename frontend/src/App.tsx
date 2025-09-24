@@ -114,10 +114,10 @@ function App() {
 
   const sendRandomQuoteToFeed = async () => {
     if (!quote) return;
-    
+
     try {
       // Send the current random quote to the feed
-      await fetch('/api/feed/random', {
+      await fetch('/v1/feed/random', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ quote })
@@ -292,7 +292,7 @@ function App() {
         </div>
         <RealTimeFeed />
       </div>
-      
+
       <div className="footer">
         <p>Built with React + Vite + TypeScript</p>
         <p className="tech-stack">

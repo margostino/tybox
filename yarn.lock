@@ -535,7 +535,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ioredis/commands@npm:^1.3.0":
+"@ioredis/commands@npm:^1.1.1, @ioredis/commands@npm:^1.3.0":
   version: 1.4.0
   resolution: "@ioredis/commands@npm:1.4.0"
   checksum: 10c0/99afe21fba794f84a2b84cceabcc370a7622e7b8b97a6589456c07c9fa62a15d54c5546f6f7214fb9a2458b1fa87579d5c531aaf48e06cc9be156d5923892c8d
@@ -2911,7 +2911,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ioredis@npm:^5.4.1, ioredis@npm:^5.7.0":
+"ioredis@npm:5.4.2":
+  version: 5.4.2
+  resolution: "ioredis@npm:5.4.2"
+  dependencies:
+    "@ioredis/commands": "npm:^1.1.1"
+    cluster-key-slot: "npm:^1.1.0"
+    debug: "npm:^4.3.4"
+    denque: "npm:^2.1.0"
+    lodash.defaults: "npm:^4.2.0"
+    lodash.isarguments: "npm:^3.1.0"
+    redis-errors: "npm:^1.2.0"
+    redis-parser: "npm:^3.0.0"
+    standard-as-callback: "npm:^2.1.0"
+  checksum: 10c0/e59d2cceb43ed74b487d7b50fa91b93246e734e5d4835c7e62f64e44da072f12ab43b044248012e6f8b76c61a7c091a2388caad50e8ad69a8ce5515a730b23b8
+  languageName: node
+  linkType: hard
+
+"ioredis@npm:^5.4.1":
   version: 5.7.0
   resolution: "ioredis@npm:5.7.0"
   dependencies:
@@ -4633,7 +4650,7 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-prettier: "npm:^5.5.4"
     express: "npm:^5.1.0"
-    ioredis: "npm:^5.7.0"
+    ioredis: "npm:5.4.2"
     ioredis-timeout: "npm:^1.5.0"
     nodemon: "npm:^3.1.10"
     prettier: "npm:^3.6.2"

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './RealTimeFeed.css';
 
 interface FeedItem {
@@ -23,6 +23,7 @@ export default function RealTimeFeed() {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const lastEventIdRef = useRef<string | null>(null);
 
   const connectSSE = () => {
     try {
@@ -31,8 +32,14 @@ export default function RealTimeFeed() {
         eventSourceRef.current.close();
       }
 
-      // Create new SSE connection
-      const eventSource = new EventSource('/api/feed/stream');
+      // Create new SSE connection with last event ID if available
+      const url = lastEventIdRef.current
+        ? `/v1/feed/stream?lastEventId=${encodeURIComponent(lastEventIdRef.current)}`
+        : '/v1/feed/stream';
+
+      console.log('Connecting to SSE with URL:', url, 'Last Event ID:', lastEventIdRef.current);
+
+      const eventSource = new EventSource(url);
       eventSourceRef.current = eventSource;
 
       eventSource.onopen = () => {
@@ -46,7 +53,7 @@ export default function RealTimeFeed() {
         try {
           const feedItem: FeedItem = JSON.parse(event.data);
           feedItem.timestamp = new Date(feedItem.timestamp);
-          
+
           setFeedItems((prev) => {
             // Add new item at the beginning and keep only last 50 items
             const updated = [feedItem, ...prev].slice(0, 50);
@@ -61,14 +68,14 @@ export default function RealTimeFeed() {
         console.error('SSE connection error:', error);
         setIsConnected(false);
         setConnectionError('Connection lost. Reconnecting...');
-        
+
         eventSource.close();
         eventSourceRef.current = null;
 
         // Implement exponential backoff for reconnection
         const attempts = reconnectAttemptsRef.current;
         const delay = Math.min(1000 * Math.pow(2, attempts), 30000); // Max 30 seconds
-        
+
         reconnectTimeoutRef.current = setTimeout(() => {
           reconnectAttemptsRef.current++;
           connectSSE();
@@ -77,6 +84,9 @@ export default function RealTimeFeed() {
 
       // Listen for specific event types
       eventSource.addEventListener('quote-created', (event) => {
+        if (event.lastEventId) {
+          lastEventIdRef.current = event.lastEventId;
+        }
         const data = JSON.parse(event.data);
         const feedItem: FeedItem = {
           id: `create-${Date.now()}`,
@@ -88,6 +98,9 @@ export default function RealTimeFeed() {
       });
 
       eventSource.addEventListener('quote-updated', (event) => {
+        if (event.lastEventId) {
+          lastEventIdRef.current = event.lastEventId;
+        }
         const data = JSON.parse(event.data);
         const feedItem: FeedItem = {
           id: `update-${Date.now()}`,
@@ -99,20 +112,26 @@ export default function RealTimeFeed() {
       });
 
       eventSource.addEventListener('quote-deleted', (event) => {
+        if (event.lastEventId) {
+          lastEventIdRef.current = event.lastEventId;
+        }
         const data = JSON.parse(event.data);
         const feedItem: FeedItem = {
           id: `delete-${Date.now()}`,
           type: 'delete',
           timestamp: new Date(),
-          data: { 
+          data: {
             quote: { id: data.id, text: data.text || 'Deleted quote', author: data.author || 'Unknown' },
-            user: data.user 
+            user: data.user
           }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
       });
 
       eventSource.addEventListener('quote-random', (event) => {
+        if (event.lastEventId) {
+          lastEventIdRef.current = event.lastEventId;
+        }
         const data = JSON.parse(event.data);
         const feedItem: FeedItem = {
           id: `random-${Date.now()}`,
@@ -143,11 +162,33 @@ export default function RealTimeFeed() {
     };
   }, []);
 
+  const clearAllFeeds = async () => {
+    try {
+      const response = await fetch('/v1/feed/clear', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        // Clear local feed items immediately
+        setFeedItems([]);
+        console.log('Feed cleared successfully');
+
+        // Reset last event ID to get fresh events
+        lastEventIdRef.current = null;
+      } else {
+        console.error('Failed to clear feed');
+      }
+    } catch (error) {
+      console.error('Error clearing feed:', error);
+    }
+  };
+
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
     });
   };
 
@@ -162,7 +203,7 @@ export default function RealTimeFeed() {
   };
 
   const getFeedItemMessage = (item: FeedItem) => {
-    const user = item.data.user || 'Someone';
+    const user = item.data.user || 'John Doe';
     switch (item.type) {
       case 'create':
         return `${user} added a new quote`;
@@ -181,9 +222,20 @@ export default function RealTimeFeed() {
     <aside className="feed-container">
       <div className="feed-header">
         <h3>📡 Live Feed</h3>
-        <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
-          <span className="status-dot"></span>
-          {isConnected ? 'Connected' : connectionError || 'Disconnected'}
+        <div className="feed-header-controls">
+          <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
+            <span className="status-dot"></span>
+            {isConnected ? 'Connected' : connectionError || 'Disconnected'}
+          </div>
+          {feedItems.length > 0 && (
+            <button
+              className="clear-feed-button"
+              onClick={clearAllFeeds}
+              title="Clear all feed items"
+            >
+              🗑️ Clear
+            </button>
+          )}
         </div>
       </div>
 

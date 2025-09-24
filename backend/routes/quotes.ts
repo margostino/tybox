@@ -1,6 +1,7 @@
 import { Request, Response, Router } from "express";
 import { getPrismaClient } from "../lib/database";
 import { GetQuotesRequestSchema } from "../schemas";
+import { redisStreamClient } from "../config/redis";
 
 const router = Router();
 
@@ -110,6 +111,16 @@ router.delete("/:id", async (req: Request, res: Response) => {
     });
   }
 
+  // Emit event to Redis stream
+  await redisStreamClient.xadd(
+    "feed",
+    "*",
+    "type",
+    "quote-deleted",
+    "data",
+    JSON.stringify({ quoteId: req.params.id, timestamp: new Date().toISOString() })
+  );
+
   res.json({
     success: true,
     timestamp: new Date().toISOString(),
@@ -121,6 +132,16 @@ router.post("/", async (req: Request, res: Response) => {
   const quote = await prismaClient.quote.create({
     data: req.body,
   });
+  // Emit event to Redis stream
+  await redisStreamClient.xadd(
+    "feed",
+    "*",
+    "type",
+    "quote-created",
+    "data",
+    JSON.stringify({ quote, timestamp: new Date().toISOString() })
+  );
+
   res.json({
     success: true,
     data: quote,
