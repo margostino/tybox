@@ -17,15 +17,33 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
   const [formData, setFormData] = useState({ text: '', author: '' });
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalQuotes, setTotalQuotes] = useState(0);
+  const [pageSize] = useState(10); // Fixed page size of 10 items per page
 
-  const fetchQuotes = async () => {
+  const fetchQuotes = async (page: number = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/v1/quotes');
+      const response = await fetch(`/v1/quotes?page=${page}&limit=${pageSize}`);
       if (!response.ok) throw new Error('Failed to fetch quotes');
       const data = await response.json();
+      
+      // Expecting backend to return: { data: quotes[], pagination: { page, limit, total, totalPages } }
       setQuotes(data.data || []);
+      
+      if (data.pagination) {
+        setCurrentPage(data.pagination.page || page);
+        setTotalPages(data.pagination.totalPages || 1);
+        setTotalQuotes(data.pagination.total || data.data?.length || 0);
+      } else {
+        // Fallback if backend doesn't support pagination yet
+        setTotalPages(Math.ceil((data.data?.length || 0) / pageSize));
+        setTotalQuotes(data.data?.length || 0);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch quotes');
     } finally {
@@ -51,7 +69,9 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
       if (!response.ok) throw new Error('Failed to create quote');
 
       const data = await response.json();
-      setQuotes([...quotes, data.data]);
+      // After creating, go back to first page to see the new quote
+      setCurrentPage(1);
+      fetchQuotes(1);
       setFormData({ text: '', author: '' });
       setIsAddMode(false);
       onQuoteUpdate?.();
@@ -129,24 +149,33 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
   };
 
   useEffect(() => {
-    fetchQuotes();
-  }, []);
+    fetchQuotes(currentPage);
+  }, [currentPage]);
 
   return (
     <div className="quote-manager">
       <div className="manager-header">
         <h2 className="manager-title">Quote Manager</h2>
-        <button
-          onClick={() => {
-            setIsAddMode(true);
-            setIsEditMode(false);
-            setFormData({ text: '', author: '' });
-          }}
-          className="button button-add"
-          disabled={isAddMode || isEditMode}
-        >
-          + Add New Quote
-        </button>
+        <div className="header-buttons">
+          <button
+            onClick={() => fetchQuotes(currentPage)}
+            className="button button-refresh"
+            disabled={loading}
+          >
+            {loading ? 'Refreshing...' : '🔄 Refresh'}
+          </button>
+          <button
+            onClick={() => {
+              setIsAddMode(true);
+              setIsEditMode(false);
+              setFormData({ text: '', author: '' });
+            }}
+            className="button button-add"
+            disabled={isAddMode || isEditMode}
+          >
+            + Add New Quote
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -268,16 +297,72 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
       </div>
 
       <div className="manager-footer">
-        <button
-          onClick={fetchQuotes}
-          className="button button-refresh"
-          disabled={loading}
-        >
-          {loading ? 'Refreshing...' : '🔄 Refresh'}
-        </button>
         <span className="quote-count">
-          Total Quotes: {quotes.length}
+          Total Quotes: {totalQuotes} | Showing page {currentPage} of {totalPages}
         </span>
+        
+        <div className="pagination-controls">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1 || loading}
+            className="pagination-btn pagination-first"
+            title="First page"
+          >
+            ⏮️
+          </button>
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1 || loading}
+            className="pagination-btn pagination-prev"
+            title="Previous page"
+          >
+            ◀️
+          </button>
+          
+          <div className="pagination-pages">
+            {/* Show page numbers */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  disabled={loading}
+                  className={`pagination-number ${currentPage === pageNum ? 'active' : ''}`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages || loading}
+            className="pagination-btn pagination-next"
+            title="Next page"
+          >
+            ▶️
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages || loading}
+            className="pagination-btn pagination-last"
+            title="Last page"
+          >
+            ⏭️
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { execSync } from "child_process";
 import { PrismaClient } from "../generated/prisma";
+import { backfill } from "./backfill";
 
 let prisma: PrismaClient;
 
@@ -34,6 +35,8 @@ export async function initializeDatabase(): Promise<PrismaClient> {
   try {
     await prisma.$connect();
     console.log("✅ Connected to database");
+    await backfill();
+    console.log("✅ Database backfilled");
   } catch (error) {
     console.error("❌ Failed to connect to database:", error);
     throw error;

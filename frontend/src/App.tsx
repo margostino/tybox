@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './App.css';
 import QuoteManager from './QuoteManager';
+import RealTimeFeed from './RealTimeFeed';
 
 interface Quote {
   id: number;
@@ -111,9 +112,25 @@ function App() {
     fetchQuote();
   }, []);
 
+  const sendRandomQuoteToFeed = async () => {
+    if (!quote) return;
+    
+    try {
+      // Send the current random quote to the feed
+      await fetch('/api/feed/random', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quote })
+      });
+    } catch (err) {
+      console.error('Error sending quote to feed:', err);
+    }
+  };
+
   return (
     <div className="app">
-      <div className="container">
+      <div className="app-layout">
+        <div className="container">
         <h1 className="title">
           Hello World!
         </h1>
@@ -140,9 +157,10 @@ function App() {
           </button>
         </div>
 
-        {/* Home Tab - Random Quote */}
-        {activeTab === 'home' && (
-          <>
+        <div className="tab-content">
+          {/* Home Tab - Random Quote */}
+          {activeTab === 'home' && (
+            <>
 
         <div className="quote-container">
           {loading && (
@@ -170,13 +188,23 @@ function App() {
           )}
         </div>
 
-        <button
-          onClick={fetchQuote}
-          className="button button-primary"
-          disabled={loading}
-        >
-          {loading ? 'Loading...' : 'Get New Quote'}
-        </button>
+        <div className="button-group">
+          <button
+            onClick={fetchQuote}
+            className="button button-primary"
+            disabled={loading}
+          >
+            {loading ? 'Loading...' : 'Get New Quote'}
+          </button>
+          <button
+            onClick={sendRandomQuoteToFeed}
+            className="button button-secondary"
+            disabled={!quote || loading}
+            title="Share this quote to the live feed"
+          >
+            📡 Send to Feed
+          </button>
+        </div>
           </>
         )}
 
@@ -256,12 +284,15 @@ function App() {
           </div>
         )}
 
-        {/* Manage Tab */}
-        {activeTab === 'manage' && (
-          <QuoteManager />
-        )}
+          {/* Manage Tab */}
+          {activeTab === 'manage' && (
+            <QuoteManager />
+          )}
+        </div>
+        </div>
+        <RealTimeFeed />
       </div>
-
+      
       <div className="footer">
         <p>Built with React + Vite + TypeScript</p>
         <p className="tech-stack">
