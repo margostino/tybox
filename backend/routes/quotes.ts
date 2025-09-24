@@ -105,6 +105,14 @@ router.get("/", (req: Request, res: Response) => {
   });
 });
 
+router.get("/search", (req: Request, res: Response) => {
+  const query = req.query.q as string;
+  res.json({
+    success: true,
+    data: quotes.filter((q) => q.text.includes(query)),
+  });
+});
+
 router.get("/:id", (req: Request, res: Response) => {
   const id = parseInt(req.params.id);
   const quote = quotes.find((q) => q.id === id);

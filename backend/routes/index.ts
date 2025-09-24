@@ -5,6 +5,6 @@ import quotesRouter from "./quotes";
 const router: Router = Router();
 
 router.get("/ping", getPing);
-router.use("/api/quotes", quotesRouter);
+router.use("/v1/quotes", quotesRouter);
 
 export default router;

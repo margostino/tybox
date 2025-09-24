@@ -1,13 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import './QuoteManager.css';
-
-interface Quote {
-  id: string;
-  text: string;
-  author: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Quote } from './models';
 
 interface QuoteManagerProps {
   onQuoteUpdate?: () => void;
@@ -18,21 +11,18 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form states
   const [isAddMode, setIsAddMode] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [formData, setFormData] = useState({ text: '', author: '' });
 
-  // Delete confirmation
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Fetch all quotes
   const fetchQuotes = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/quotes/all');
+      const response = await fetch('/v1/quotes');
       if (!response.ok) throw new Error('Failed to fetch quotes');
       const data = await response.json();
       setQuotes(data.data || []);
@@ -43,7 +33,6 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     }
   };
 
-  // Create new quote
   const createQuote = async () => {
     if (!formData.text.trim() || !formData.author.trim()) {
       setError('Please fill in all fields');
@@ -53,7 +42,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/quotes', {
+      const response = await fetch('/v1/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -73,7 +62,6 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     }
   };
 
-  // Update existing quote
   const updateQuote = async () => {
     if (!editingQuote) return;
     if (!formData.text.trim() || !formData.author.trim()) {
@@ -84,7 +72,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/quotes/${editingQuote.id}`, {
+      const response = await fetch(`/v1/quotes/${editingQuote.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -105,12 +93,11 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     }
   };
 
-  // Delete quote
   const deleteQuote = async (id: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/quotes/${id}`, {
+      const response = await fetch(`/v1/quotes/${id}`, {
         method: 'DELETE',
       });
 
@@ -126,7 +113,6 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     }
   };
 
-  // Start editing
   const startEdit = (quote: Quote) => {
     setEditingQuote(quote);
     setFormData({ text: quote.text, author: quote.author });
@@ -134,7 +120,6 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setIsAddMode(false);
   };
 
-  // Cancel operations
   const cancelForm = () => {
     setFormData({ text: '', author: '' });
     setIsAddMode(false);

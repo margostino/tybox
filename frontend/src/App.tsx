@@ -41,7 +41,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch('/api/quotes/random');
+      const response = await fetch('/v1/quotes/random');
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -73,7 +73,7 @@ function App() {
     setShowSearchResults(true);
 
     try {
-      const response = await fetch(`/api/quotes/search?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/v1/quotes/search?q=${encodeURIComponent(searchQuery)}`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
