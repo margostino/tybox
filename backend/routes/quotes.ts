@@ -1,5 +1,6 @@
 import { Request, Response, Router } from "express";
 import { getPrismaClient } from "../lib/database";
+import { GetQuotesRequestSchema } from "../schemas";
 
 const router = Router();
 
@@ -20,15 +21,39 @@ router.get("/random", async (req: Request, res: Response) => {
 });
 
 router.get("/", async (req: Request, res: Response) => {
-  const prismaClient = getPrismaClient();
-  const quotes = await prismaClient.quote.findMany();
+  const parsed = GetQuotesRequestSchema.safeParse(req);
 
-  quotes.sort((a, b) => (a.updatedAt > b.updatedAt ? -1 : 1));
+  if (!parsed.success) {
+    res.status(400).json({ errors: parsed.error.format() });
+    return;
+  }
+
+  const { page, limit } = parsed.data.query;
+
+  const prismaClient = getPrismaClient();
+  const totalQuotes = await prismaClient.quote.count();
+
+  const skip = (page - 1) * limit;
+
+  const quotes = await prismaClient.quote.findMany({
+    skip,
+    take: limit,
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+
+  const totalPages = Math.ceil(totalQuotes / limit);
 
   res.json({
     success: true,
     data: quotes,
-    count: quotes.length,
+    pagination: {
+      page,
+      limit,
+      total: totalQuotes,
+      totalPages,
+    },
     timestamp: new Date().toISOString(),
   });
 });
