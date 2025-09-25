@@ -17,14 +17,18 @@ datasource db {
 // Example models for your application
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  posts     Post[]
-  profile   Profile?
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String   @map("password_hash")
+  email        String?
+  name         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  posts        Post[]
+  profile      Profile?
+  Feed         Feed[]
 
+  @@index([username])
   @@map("users")
 }
 
@@ -85,4 +89,16 @@ model Quote {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("quote")
+}
+
+model Feed {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   @map("feed_type")
+  data      Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  User      User     @relation(fields: [userId], references: [id])
+
+  @@map("feed")
 }

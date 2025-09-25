@@ -1,50 +1,13 @@
 import { Request, Response, Router } from "express";
 import { clearInterval, setInterval } from "timers";
 import { setTimeout } from "timers/promises";
-import { createRedisClient, getRedisClient } from "../clients";
-import { PostRandomQuoteFeedRequestSchema } from "../schemas";
+import { createStreamRedisClient, getRedisClient } from "../clients";
+import { getPrismaClient } from "../lib";
+import { authenticate } from "../middlewares";
+import { FEED_TYPES, FeedEvent, PostRandomQuoteFeedRequestSchema } from "../schemas";
 import { zodParse } from "../utils";
 
 const router = Router();
-
-const initializeStream = async () => {
-  try {
-    const streamLength = await getRedisClient().xlen("feed");
-    console.log(`Feed stream has ${streamLength} messages`);
-
-    // If stream doesn't exist, create it with an initial message
-    if (streamLength === 0) {
-      await getRedisClient().xadd(
-        "feed",
-        "*",
-        "type",
-        "system",
-        "data",
-        JSON.stringify({ message: "Stream initialized", timestamp: new Date().toISOString() })
-      );
-      console.log("Feed stream initialized");
-    }
-  } catch (error) {
-    console.error("Error initializing stream:", error);
-    // Stream might not exist, create it
-    try {
-      await getRedisClient().xadd(
-        "feed",
-        "*",
-        "type",
-        "system",
-        "data",
-        JSON.stringify({ message: "Stream created", timestamp: new Date().toISOString() })
-      );
-      console.log("Feed stream created");
-    } catch (createError) {
-      console.error("Failed to create stream:", createError);
-    }
-  }
-};
-
-// Initialize stream when module loads
-initializeStream();
 
 router.get("/stream", async (req: Request, res: Response) => {
   res.setHeader("Content-Type", "text/event-stream");
@@ -57,7 +20,7 @@ router.get("/stream", async (req: Request, res: Response) => {
 
   // Create a dedicated Redis client for this SSE connection
   // const streamReader = new Redis(redisConfig);
-  const streamReader = createRedisClient();
+  const streamReader = createStreamRedisClient();
 
   // EventSource API sends last-event-id as query param on reconnection
   let lastId = (req.query.lastEventId as string) || (req.headers["last-event-id"] as string) || "$";
@@ -157,14 +120,16 @@ router.get("/stream", async (req: Request, res: Response) => {
   listenToStream();
 });
 
-router.post("/random", async (req: Request, res: Response) => {
+router.post("/random", authenticate, async (req: Request, res: Response) => {
   console.log("POST /random received:", req.body);
 
   let quote;
+
+  const redisClient = getRedisClient();
+  const prismaClient = getPrismaClient();
+
   try {
-    console.log("About to parse with Zod...");
     const request = zodParse(PostRandomQuoteFeedRequestSchema, req.body);
-    console.log("Zod parse successful:", request);
     quote = request.quote;
   } catch (error) {
     console.error("Zod validation error:", error);
@@ -172,52 +137,52 @@ router.post("/random", async (req: Request, res: Response) => {
   }
 
   try {
-    console.log("About to call xadd with quote:", quote);
-    console.log("Redis stream client status:", getRedisClient().status);
+    // if (redisClient.status !== "ready") {
+    //   console.error("Redis stream client is not ready. Status:", redisClient.status);
 
-    // Check connection before attempting xadd
-    if (getRedisClient().status !== "ready") {
-      console.error("Redis stream client is not ready. Status:", getRedisClient().status);
+    //   try {
+    //     await redisClient.ping();
+    //     console.log("Redis ping successful");
+    //   } catch (pingError) {
+    //     console.error("Redis ping failed:", pingError);
+    //     return res.status(503).json({
+    //       success: false,
+    //       error: "Redis connection not ready",
+    //       status: redisClient.status,
+    //     });
+    //   }
+    // }
 
-      // Try to ping Redis first
-      try {
-        await getRedisClient().ping();
-        console.log("Redis ping successful");
-      } catch (pingError) {
-        console.error("Redis ping failed:", pingError);
-        return res.status(503).json({
-          success: false,
-          error: "Redis connection not ready",
-          status: getRedisClient().status,
-        });
-      }
-    }
-
-    // Prepare the data
-    const streamData = {
-      quote,
-      user_name: "Borges", // TODO: this should be fetched from DB by id
-      user_id: "2", // TODO: this should be come from frontend instead
-      timestamp: new Date().toISOString(),
+    const feedEvent: FeedEvent = {
+      type: FEED_TYPES.RANDOM_QUOTE,
+      metadata: {
+        username: req.user!.username,
+        timestamp: new Date().toISOString(),
+      },
+      data: {
+        quote,
+      },
     };
 
-    console.log("Attempting xadd with data:", streamData);
+    console.log("Attempting xadd with data:", feedEvent);
 
-    // Add to stream without race condition - let ioredis-timeout handle the timeout
-    const messageId = await getRedisClient().xadd(
-      "feed",
-      "*",
-      "type",
-      "quote-random",
-      "data",
-      JSON.stringify(streamData)
-    );
+    const [, messageId] = await Promise.all([
+      prismaClient.feed.create({
+        data: {
+          type: feedEvent.type,
+          data: feedEvent.data,
+          userId: req.user!.userId,
+          createdAt: feedEvent.metadata.timestamp,
+        },
+      }),
+      redisClient.xadd("feed", "*", "type", feedEvent.type, "data", JSON.stringify(feedEvent)),
+    ]);
 
     console.log("Message added to stream with ID:", messageId);
 
     // Optionally verify the message was added (remove if not needed for performance)
     try {
-      const checkMessages = await getRedisClient().xrange("feed", "-", "+", "COUNT", 5);
+      const checkMessages = await redisClient.xrange("feed", "-", "+", "COUNT", 5);
       console.log(`Stream now has ${checkMessages.length} recent messages`);
     } catch (verifyError) {
       console.warn("Could not verify stream messages:", verifyError);
@@ -228,7 +193,7 @@ router.post("/random", async (req: Request, res: Response) => {
       success: true,
       message: "Quote added to stream",
       messageId,
-      timestamp: streamData.timestamp,
+      timestamp: feedEvent.metadata.timestamp,
     });
   } catch (error: any) {
     console.error("Error adding to stream:", error);
@@ -244,7 +209,7 @@ router.post("/random", async (req: Request, res: Response) => {
       error: error.message || "Failed to add to stream",
       details: {
         code: error.code,
-        redisStatus: getRedisClient().status,
+        redisStatus: redisClient.status,
       },
     });
   }
@@ -252,14 +217,16 @@ router.post("/random", async (req: Request, res: Response) => {
 
 // Endpoint to clear all feed data
 router.delete("/clear", async (req: Request, res: Response) => {
+  const redisClient = getRedisClient();
+
   try {
     console.log("Clearing all feed data from Redis stream...");
 
     // Delete the entire stream
-    await getRedisClient().del("feed");
+    await redisClient.del("feed");
 
     // Recreate the stream with an initial message
-    await getRedisClient().xadd(
+    await redisClient.xadd(
       "feed",
       "*",
       "type",

@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { QuoteSchema } from "../response";
+import { QuoteResponseSchema } from "../response";
 
 export const PostRandomQuoteFeedRequestSchema = z.object({
-  quote: QuoteSchema,
+  quote: QuoteResponseSchema,
 });
 
 export type PostRandomQuoteFeedRequest = z.infer<typeof PostRandomQuoteFeedRequestSchema>;

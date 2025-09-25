@@ -5,6 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ### Quick Start
+
 ```bash
 # Start database and run development servers
 yarn db:setup          # Start PostgreSQL, run migrations, and seed data
@@ -12,6 +13,7 @@ yarn dev:all           # Run both frontend and backend concurrently
 ```
 
 ### Development
+
 ```bash
 yarn dev               # Backend only with hot reload (port 4000)
 yarn dev:frontend      # Frontend only (port 3000)
@@ -20,6 +22,7 @@ yarn dev:migrate       # Backend with auto-migration
 ```
 
 ### Database Operations
+
 ```bash
 yarn prisma:generate   # Generate Prisma Client after schema changes
 yarn prisma:migrate    # Create and apply migrations (development)
@@ -28,6 +31,7 @@ yarn prisma:seed       # Run backend/prisma-example.ts to seed database
 ```
 
 ### Code Quality
+
 ```bash
 yarn lint              # Run ESLint on backend/**/*.ts
 yarn lint:fix          # Auto-fix ESLint issues
@@ -35,6 +39,7 @@ yarn format            # Format code with Prettier
 ```
 
 ### Docker Services
+
 ```bash
 ./bin/start.sh         # Start all services (PostgreSQL, Redis, WireMock)
 ./bin/start.sh postgres # Start specific service(s)
@@ -42,6 +47,7 @@ yarn format            # Format code with Prettier
 ```
 
 ### Build & Production
+
 ```bash
 yarn build             # Build both frontend and backend
 yarn start             # Run compiled backend
@@ -51,9 +57,10 @@ yarn start:migrate     # Production with migrations
 ## Architecture
 
 ### Tech Stack
+
 - **Frontend**: React 19 + Vite + TypeScript
   - Development server on port 3000
-  - Proxy configuration for `/api` routes to backend
+  - Proxy configuration for `/v1` routes to backend
   - Built output to `dist-frontend/`
 
 - **Backend**: Express 5 + TypeScript + Prisma ORM
@@ -77,7 +84,7 @@ yarn start:migrate     # Production with migrations
 2. **API Structure**: Modular route organization
    - Routes defined in `backend/routes/`
    - Middleware stack: CORS → JSON parsing → metrics → routes → error handler
-   - Quote API endpoints at `/api/quotes`
+   - Quote API endpoints at `/v1/quotes`
 
 3. **Frontend Components**:
    - `App.tsx`: Main application with quote display
@@ -101,6 +108,7 @@ yarn start:migrate     # Production with migrations
 ## Working with Prisma
 
 When modifying database schema:
+
 1. Edit `prisma/schema.prisma`
 2. Run `yarn prisma:migrate` to create migration
 3. Run `yarn prisma:generate` to update TypeScript types
@@ -108,7 +116,7 @@ When modifying database schema:
 
 ## Frontend Development
 
-- Vite dev server proxies `/api` requests to backend
+- Vite dev server proxies `/v1` requests to backend
 - React components use CSS modules for styling
 - Error boundaries implemented for graceful error handling
 - Responsive design with gradient animations

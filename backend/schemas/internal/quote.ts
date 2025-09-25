@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const QuoteResponseSchema = z.object({
+export const QuoteSchema = z.object({
   id: z.string(),
   text: z.string(),
   author: z.string(),
@@ -8,4 +8,4 @@ export const QuoteResponseSchema = z.object({
   updatedAt: z.string(),
 });
 
-export type QuoteResponse = z.infer<typeof QuoteResponseSchema>;
+export type Quote = z.infer<typeof QuoteSchema>;

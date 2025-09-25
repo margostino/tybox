@@ -1,3 +1,4 @@
+export { LoginRequestSchema, type LoginRequest } from "./auth";
 export { GetQuotesRequestSchema, type GetQuotesRequest } from "./getQuotesRequest";
 export {
   PostRandomQuoteFeedRequestSchema,

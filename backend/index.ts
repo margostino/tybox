@@ -3,7 +3,7 @@ import express, { Application } from "express";
 import { initializeRedisClient } from "./clients";
 import { logger } from "./config";
 import { env } from "./config/env";
-import { initializeDatabase } from "./lib/database";
+import { backfill, initializeDatabase, initializeStream } from "./lib";
 import { errorHandler, requestMetrics, responseHandler } from "./middlewares";
 import routes from "./routes";
 
@@ -27,8 +27,10 @@ app.use(errorHandler);
 
 async function startServer() {
   try {
-    await initializeDatabase();
-    await initializeRedisClient();
+    await Promise.all([initializeDatabase(), initializeRedisClient()]);
+    await Promise.all([backfill(), initializeStream()]);
+    console.log("✅ Database backfilled");
+    console.log("✅ Stream initialized");
 
     app.listen(PORT, () => {
       logger.info(`Server is running on http://localhost:${PORT}`);

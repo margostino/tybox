@@ -39,6 +39,36 @@
   background-clip: text;
 }
 
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.logout-button {
+  padding: 6px 12px;
+  background: #ff4757;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.logout-button:hover {
+  background: #ff3838;
+}
+
 .quote-container {
   min-height: 150px;
   display: flex;

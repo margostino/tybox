@@ -15,6 +15,8 @@ export const EnvSchema = z.object({
     .string()
     .transform((val) => Number(val))
     .default(6379),
+  JWT_SECRET: z.string().min(1),
+  JWT_EXPIRES_IN: z.string().min(1),
 });
 
 export type Environment = z.infer<typeof EnvSchema>;

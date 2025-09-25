@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import './RealTimeFeed.css';
+import { api } from './utils/api';
 
 interface FeedItem {
   id: string;
-  type: 'create' | 'update' | 'delete' | 'random';
+  type: 'created_quote' | 'updated_quote' | 'deleted_quote' | 'random_quote';
   timestamp: Date;
   data: {
     quote?: {
@@ -12,7 +13,7 @@ interface FeedItem {
       author: string;
     };
     message?: string;
-    user_name?: string;
+    username?: string;
   };
 }
 
@@ -85,62 +86,63 @@ export default function RealTimeFeed() {
         }, delay);
       };
 
-      // Listen for specific event types
-      eventSource.addEventListener('quote-created', (event) => {
-        if (event.lastEventId) {
-          lastEventIdRef.current = event.lastEventId;
-        }
-        const data = JSON.parse(event.data);
-        const feedItem: FeedItem = {
-          id: `create-${Date.now()}`,
-          type: 'create',
-          timestamp: new Date(),
-          data: { quote: data.quote, user_name: data.user_name }
-        };
-        setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
-      });
+      // // Listen for specific event types
+      // eventSource.addEventListener('quote-created', (event) => {
+      //   if (event.lastEventId) {
+      //     lastEventIdRef.current = event.lastEventId;
+      //   }
+      //   const data = JSON.parse(event.data);
+      //   const feedItem: FeedItem = {
+      //     id: `create-${Date.now()}`,
+      //     type: 'create',
+      //     timestamp: new Date(),
+      //     data: { quote: data.quote, username: data.username }
+      //   };
+      //   setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
+      // });
 
-      eventSource.addEventListener('quote-updated', (event) => {
-        if (event.lastEventId) {
-          lastEventIdRef.current = event.lastEventId;
-        }
-        const data = JSON.parse(event.data);
-        const feedItem: FeedItem = {
-          id: `update-${Date.now()}`,
-          type: 'update',
-          timestamp: new Date(),
-          data: { quote: data.quote, user_name: data.user_name }
-        };
-        setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
-      });
+      // eventSource.addEventListener('quote-updated', (event) => {
+      //   if (event.lastEventId) {
+      //     lastEventIdRef.current = event.lastEventId;
+      //   }
+      //   const data = JSON.parse(event.data);
+      //   const feedItem: FeedItem = {
+      //     id: `update-${Date.now()}`,
+      //     type: 'update',
+      //     timestamp: new Date(),
+      //     data: { quote: data.quote, username: data.username }
+      //   };
+      //   setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
+      // });
 
-      eventSource.addEventListener('quote-deleted', (event) => {
-        if (event.lastEventId) {
-          lastEventIdRef.current = event.lastEventId;
-        }
-        const data = JSON.parse(event.data);
-        const feedItem: FeedItem = {
-          id: `delete-${Date.now()}`,
-          type: 'delete',
-          timestamp: new Date(),
-          data: {
-            quote: { id: data.id, text: data.text || 'Deleted quote', author: data.author || 'Unknown' },
-            user_name: data.user_name
-          }
-        };
-        setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
-      });
+      // eventSource.addEventListener('quote-deleted', (event) => {
+      //   if (event.lastEventId) {
+      //     lastEventIdRef.current = event.lastEventId;
+      //   }
+      //   const data = JSON.parse(event.data);
+      //   const feedItem: FeedItem = {
+      //     id: `delete-${Date.now()}`,
+      //     type: 'delete',
+      //     timestamp: new Date(),
+      //     data: {
+      //       quote: { id: data.id, text: data.text || 'Deleted quote', author: data.author || 'Unknown' },
+      //       username: data.username
+      //     }
+      //   };
+      //   setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
+      // });
 
-      eventSource.addEventListener('quote-random', (event) => {
+      eventSource.addEventListener('random_quote', (event) => {
         if (event.lastEventId) {
           lastEventIdRef.current = event.lastEventId;
         }
         const data = JSON.parse(event.data);
+
         const feedItem: FeedItem = {
           id: `random-${Date.now()}`,
-          type: 'random',
+          type: data.type,
           timestamp: new Date(),
-          data: { quote: data.quote, user_name: data.user_name }
+          data: { quote: data.data.quote, username: data.metadata.username }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
       });
@@ -167,21 +169,14 @@ export default function RealTimeFeed() {
 
   const clearAllFeeds = async () => {
     try {
-      const response = await fetch('/v1/feed/clear', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      await api.delete('/feed/clear');
 
-      if (response.ok) {
-        // Clear local feed items immediately
-        setFeedItems([]);
-        console.log('Feed cleared successfully');
+      // Clear local feed items immediately
+      setFeedItems([]);
+      console.log('Feed cleared successfully');
 
-        // Reset last event ID to get fresh events
-        lastEventIdRef.current = null;
-      } else {
-        console.error('Failed to clear feed');
-      }
+      // Reset last event ID to get fresh events
+      lastEventIdRef.current = null;
     } catch (error) {
       console.error('Error clearing feed:', error);
     }
@@ -197,24 +192,24 @@ export default function RealTimeFeed() {
 
   const getFeedItemIcon = (type: FeedItem['type']) => {
     switch (type) {
-      case 'create': return '➕';
-      case 'update': return '✏️';
-      case 'delete': return '🗑️';
-      case 'random': return '🎲';
+      case 'created_quote': return '➕';
+      case 'updated_quote': return '✏️';
+      case 'deleted_quote': return '🗑️';
+      case 'random_quote': return '🎲';
       default: return '📝';
     }
   };
 
   const getFeedItemMessage = (item: FeedItem) => {
-    const user = item.data.user_name || 'unknown';
+    const user = item.data.username || 'unknown';
     switch (item.type) {
-      case 'create':
+      case 'created_quote':
         return `${user} added a new quote`;
-      case 'update':
+      case 'updated_quote':
         return `${user} updated a quote`;
-      case 'delete':
+      case 'deleted_quote':
         return `${user} deleted a quote`;
-      case 'random':
+      case 'random_quote':
         return `${user} shared a random quote`;
       default:
         return 'Feed update';

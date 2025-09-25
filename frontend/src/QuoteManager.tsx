@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './QuoteManager.css';
 import { Quote } from './models';
+import { api } from './utils/api';
 
 interface QuoteManagerProps {
   onQuoteUpdate?: () => void;
@@ -28,9 +29,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/v1/quotes?page=${page}&limit=${pageSize}`);
-      if (!response.ok) throw new Error('Failed to fetch quotes');
-      const data = await response.json();
+      const data = await api.get(`/quotes?page=${page}&limit=${pageSize}`);
 
       // Expecting backend to return: { data: quotes[], pagination: { page, limit, total, totalPages } }
       setQuotes(data.data || []);
@@ -60,15 +59,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/v1/quotes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error('Failed to create quote');
-
-      const data = await response.json();
+      const data = await api.post('/quotes', formData);
       // After creating, go back to first page to see the new quote
       setCurrentPage(1);
       fetchQuotes(1);
@@ -92,15 +83,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/v1/quotes/${editingQuote.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) throw new Error('Failed to update quote');
-
-      const data = await response.json();
+      const data = await api.put(`/quotes/${editingQuote.id}`, formData);
       setQuotes(quotes.map(q => q.id === editingQuote.id ? data.data : q));
       setFormData({ text: '', author: '' });
       setIsEditMode(false);
@@ -117,11 +100,7 @@ function QuoteManager({ onQuoteUpdate }: QuoteManagerProps) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/v1/quotes/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) throw new Error('Failed to delete quote');
+      await api.delete(`/quotes/${id}`);
 
       setQuotes(quotes.filter(q => q.id !== id));
       setDeleteConfirmId(null);

@@ -29,6 +29,7 @@ yarn dev:all
 ## 🎨 Features
 
 ### Frontend (React + Vite)
+
 - **Modern React** with TypeScript and Vite for fast development
 - **Quote Display** - Shows random inspirational quotes from the backend API
 - **Responsive Design** - Beautiful gradient UI that works on all devices
@@ -36,6 +37,7 @@ yarn dev:all
 - **Hot Module Replacement** - Instant updates during development
 
 ### Backend (Express + TypeScript)
+
 - **RESTful API** - Quote endpoints with full CRUD operations
 - **CORS Enabled** - Configured for frontend communication
 - **Database Ready** - Prisma ORM with PostgreSQL integration
@@ -72,6 +74,7 @@ The project includes a Docker Compose setup with:
 ```
 
 Scripts features:
+
 - ✅ Health checks for all services
 - ✅ Colored output for better visibility
 - ✅ Service URLs displayed on startup
@@ -82,6 +85,7 @@ Scripts features:
 ### Configuration
 
 Database connection is configured in `.env`:
+
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/tybox?schema=public"
 ```
@@ -91,6 +95,7 @@ Note: When running the app in Docker, use `host.docker.internal` instead of `loc
 ### Schema
 
 The project includes example models:
+
 - **User** - User accounts with profiles
 - **Profile** - User bio and avatar
 - **Post** - Blog posts with categories and tags
@@ -133,6 +138,7 @@ The server automatically applies migrations on startup:
    - Exits on migration failure
 
 3. **Scripts with Migration**
+
    ```bash
    yarn dev:migrate      # Dev with auto-migration
    yarn start:migrate    # Production with migration
@@ -209,17 +215,18 @@ tybox/
 
 ```bash
 # Get a random quote
-curl http://localhost:4000/api/quotes/random
+curl http://localhost:4000/v1/quotes/random
 
 # Get all quotes
-curl http://localhost:4000/api/quotes
+curl http://localhost:4000/v1/quotes
 
 # Get specific quote by ID
-curl http://localhost:4000/api/quotes/1
+curl http://localhost:4000/v1/quotes/1
 ```
 
 ### Frontend Features
-- Visit http://localhost:3000 to see the Quote App
+
+- Visit <http://localhost:3000> to see the Quote App
 - Click "Get New Quote" for random inspirational quotes
 - Fully responsive design with gradient animations
 - Error handling with retry functionality
@@ -273,6 +280,7 @@ yarn prisma:seed
 ```
 
 This will:
+
 - Create sample users, posts, categories, and tags
 - Demonstrate CRUD operations
 - Show complex queries and relations
@@ -306,6 +314,7 @@ WIREMOCK_PORT=8080
 ## 📝 Tips
 
 1. **Database Migrations**: Always run after schema changes
+
    ```bash
    yarn prisma:migrate
    ```
@@ -315,17 +324,21 @@ WIREMOCK_PORT=8080
    - Type-safe queries and mutations
 
 3. **Prisma Studio**: Visual database editor
+
    ```bash
    yarn prisma:studio
    ```
-   Opens at http://localhost:5555
+
+   Opens at <http://localhost:5555>
 
 4. **Docker Cleanup**: Remove volumes to reset data
+
    ```bash
    docker-compose down -v
    ```
 
 5. **Connection Issues**: Ensure PostgreSQL is running
+
    ```bash
    docker ps  # Check running containers
    ./bin/start.sh postgres  # Restart PostgreSQL
@@ -334,25 +347,30 @@ WIREMOCK_PORT=8080
 ## 🐛 Troubleshooting
 
 ### Frontend Issues
+
 - **Vite not starting**: Check port 3000 is free: `lsof -i :3000`
 - **API calls failing**: Ensure backend is running on port 4000
 - **CORS errors**: Check CORS configuration in `src/index.ts`
 
 ### Backend Issues
+
 - **Nodemon restart loop**: Check `nodemon.json` excludes generated files
 - **Port already in use**: Kill process: `lsof -i :4000 | grep LISTEN`
 
 ### Migration Fails
+
 - Check PostgreSQL is running: `docker ps`
 - Verify DATABASE_URL in `.env`
 - Try manual migration: `yarn prisma:migrate`
 
 ### Connection Refused
+
 - Ensure Docker services are up: `./bin/start.sh`
 - Check port conflicts: `lsof -i :5432`
 - Verify host (`localhost` vs `host.docker.internal`)
 
 ### Prisma Client Not Found
+
 - Generate client: `yarn prisma:generate`
 - Check output path in `schema.prisma`
 - Rebuild: `yarn build`
