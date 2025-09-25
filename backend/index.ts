@@ -1,5 +1,6 @@
 import cors from "cors";
 import express, { Application } from "express";
+import { initializeRedisClient } from "./clients";
 import { logger } from "./config";
 import { env } from "./config/env";
 import { initializeDatabase } from "./lib/database";
@@ -27,6 +28,7 @@ app.use(errorHandler);
 async function startServer() {
   try {
     await initializeDatabase();
+    await initializeRedisClient();
 
     app.listen(PORT, () => {
       logger.info(`Server is running on http://localhost:${PORT}`);

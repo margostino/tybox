@@ -1,7 +1,7 @@
 import { Request, Response, Router } from "express";
+import { getRedisClient } from "../clients";
 import { getPrismaClient } from "../lib/database";
 import { GetQuotesRequestSchema } from "../schemas";
-import { redisStreamClient } from "../config/redis";
 
 const router = Router();
 
@@ -112,7 +112,7 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 
   // Emit event to Redis stream
-  await redisStreamClient.xadd(
+  await getRedisClient().xadd(
     "feed",
     "*",
     "type",
@@ -133,7 +133,7 @@ router.post("/", async (req: Request, res: Response) => {
     data: req.body,
   });
   // Emit event to Redis stream
-  await redisStreamClient.xadd(
+  await getRedisClient().xadd(
     "feed",
     "*",
     "type",

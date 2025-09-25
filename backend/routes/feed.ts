@@ -1,8 +1,7 @@
 import { Request, Response, Router } from "express";
-import { Redis } from "ioredis";
 import { clearInterval, setInterval } from "timers";
 import { setTimeout } from "timers/promises";
-import { redisConfig, redisStreamClient } from "../config";
+import { createRedisClient, getRedisClient } from "../clients";
 import { PostRandomQuoteFeedRequestSchema } from "../schemas";
 import { zodParse } from "../utils";
 
@@ -10,12 +9,12 @@ const router = Router();
 
 const initializeStream = async () => {
   try {
-    const streamLength = await redisStreamClient.xlen("feed");
+    const streamLength = await getRedisClient().xlen("feed");
     console.log(`Feed stream has ${streamLength} messages`);
 
     // If stream doesn't exist, create it with an initial message
     if (streamLength === 0) {
-      await redisStreamClient.xadd(
+      await getRedisClient().xadd(
         "feed",
         "*",
         "type",
@@ -29,7 +28,7 @@ const initializeStream = async () => {
     console.error("Error initializing stream:", error);
     // Stream might not exist, create it
     try {
-      await redisStreamClient.xadd(
+      await getRedisClient().xadd(
         "feed",
         "*",
         "type",
@@ -57,7 +56,8 @@ router.get("/stream", async (req: Request, res: Response) => {
   res.write(":connected\n\n");
 
   // Create a dedicated Redis client for this SSE connection
-  const streamReader = new Redis(redisConfig);
+  // const streamReader = new Redis(redisConfig);
+  const streamReader = createRedisClient();
 
   // EventSource API sends last-event-id as query param on reconnection
   let lastId = (req.query.lastEventId as string) || (req.headers["last-event-id"] as string) || "$";
@@ -173,22 +173,22 @@ router.post("/random", async (req: Request, res: Response) => {
 
   try {
     console.log("About to call xadd with quote:", quote);
-    console.log("Redis stream client status:", redisStreamClient.status);
+    console.log("Redis stream client status:", getRedisClient().status);
 
     // Check connection before attempting xadd
-    if (redisStreamClient.status !== "ready") {
-      console.error("Redis stream client is not ready. Status:", redisStreamClient.status);
+    if (getRedisClient().status !== "ready") {
+      console.error("Redis stream client is not ready. Status:", getRedisClient().status);
 
       // Try to ping Redis first
       try {
-        await redisStreamClient.ping();
+        await getRedisClient().ping();
         console.log("Redis ping successful");
       } catch (pingError) {
         console.error("Redis ping failed:", pingError);
         return res.status(503).json({
           success: false,
           error: "Redis connection not ready",
-          status: redisStreamClient.status,
+          status: getRedisClient().status,
         });
       }
     }
@@ -204,7 +204,7 @@ router.post("/random", async (req: Request, res: Response) => {
     console.log("Attempting xadd with data:", streamData);
 
     // Add to stream without race condition - let ioredis-timeout handle the timeout
-    const messageId = await redisStreamClient.xadd(
+    const messageId = await getRedisClient().xadd(
       "feed",
       "*",
       "type",
@@ -217,7 +217,7 @@ router.post("/random", async (req: Request, res: Response) => {
 
     // Optionally verify the message was added (remove if not needed for performance)
     try {
-      const checkMessages = await redisStreamClient.xrange("feed", "-", "+", "COUNT", 5);
+      const checkMessages = await getRedisClient().xrange("feed", "-", "+", "COUNT", 5);
       console.log(`Stream now has ${checkMessages.length} recent messages`);
     } catch (verifyError) {
       console.warn("Could not verify stream messages:", verifyError);
@@ -244,7 +244,7 @@ router.post("/random", async (req: Request, res: Response) => {
       error: error.message || "Failed to add to stream",
       details: {
         code: error.code,
-        redisStatus: redisStreamClient.status,
+        redisStatus: getRedisClient().status,
       },
     });
   }
@@ -256,10 +256,10 @@ router.delete("/clear", async (req: Request, res: Response) => {
     console.log("Clearing all feed data from Redis stream...");
 
     // Delete the entire stream
-    await redisStreamClient.del("feed");
+    await getRedisClient().del("feed");
 
     // Recreate the stream with an initial message
-    await redisStreamClient.xadd(
+    await getRedisClient().xadd(
       "feed",
       "*",
       "type",

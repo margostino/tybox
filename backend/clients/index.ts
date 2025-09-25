@@ -1,1 +1,1 @@
-export { redisClient } from "./redis";
+export { createRedisClient, getRedisClient, initializeRedisClient } from "./redis";
