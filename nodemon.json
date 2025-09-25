@@ -8,5 +8,5 @@
     "node_modules/**",
     "dist/**"
   ],
-  "exec": "tsx"
+  "exec": "ts-node-dev --transpile-only"
 }

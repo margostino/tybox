@@ -1,5 +1,8 @@
 import { Request, Response, Router } from "express";
-import { redisStreamClient } from "../config";
+import { Redis } from "ioredis";
+import { clearInterval, setInterval } from "timers";
+import { setTimeout } from "timers/promises";
+import { redisConfig, redisStreamClient } from "../config";
 import { PostRandomQuoteFeedRequestSchema } from "../schemas";
 import { zodParse } from "../utils";
 
@@ -54,8 +57,6 @@ router.get("/stream", async (req: Request, res: Response) => {
   res.write(":connected\n\n");
 
   // Create a dedicated Redis client for this SSE connection
-  const { Redis } = require("ioredis");
-  const { redisConfig } = require("../config");
   const streamReader = new Redis(redisConfig);
 
   // EventSource API sends last-event-id as query param on reconnection
@@ -137,14 +138,14 @@ router.get("/stream", async (req: Request, res: Response) => {
         if (!isConnected) break;
 
         // Check if it's just a timeout (normal for XREAD BLOCK)
-        if (error.message && error.message.includes("timeout")) {
+        if (error instanceof Error && error.message.includes("timeout")) {
           // This is normal - just continue polling
           continue;
         }
 
         console.error("Error in stream listener:", error);
         // Wait a bit before retrying
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await setTimeout(1000);
       }
     }
 
@@ -195,7 +196,8 @@ router.post("/random", async (req: Request, res: Response) => {
     // Prepare the data
     const streamData = {
       quote,
-      user: "John Doe",
+      user_name: "Borges", // TODO: this should be fetched from DB by id
+      user_id: "2", // TODO: this should be come from frontend instead
       timestamp: new Date().toISOString(),
     };
 
@@ -278,7 +280,7 @@ router.delete("/clear", async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       error: "Failed to clear feed data",
-      details: error.message,
+      details: error instanceof Error ? error.message : String(error),
     });
   }
 });

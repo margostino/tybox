@@ -1,11 +1,21 @@
 import { quotesMock } from "../mocks";
+import { usersMock } from "../mocks/users";
 import { getPrismaClient } from "./database";
 
 export async function backfill() {
-  const quotes = quotesMock;
   const prisma = getPrismaClient();
-  await prisma.quote.createMany({
-    data: quotes,
-    skipDuplicates: true,
-  });
+
+  const quotes = quotesMock;
+  const users = usersMock;
+
+  await Promise.all([
+    prisma.quote.createMany({
+      data: quotes,
+      skipDuplicates: true,
+    }),
+    prisma.user.createMany({
+      data: users,
+      skipDuplicates: true,
+    }),
+  ]);
 }

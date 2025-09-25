@@ -1,8 +1,8 @@
 import { Redis } from "ioredis";
 import RedisTimeout from "ioredis-timeout";
-import { env, logger, redisStreamConfig } from "../config";
+import { env, logger, redisConfig } from "../config";
 
-export const redisClient = new Redis(redisStreamConfig);
+export const redisClient = new Redis(redisConfig);
 
 redisClient.on("connect", () => logger.info("🚀 Redis connected!"));
 redisClient.on("error", (err: Error) => logger.error("❌ Redis error:", err));

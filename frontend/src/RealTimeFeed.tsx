@@ -12,7 +12,7 @@ interface FeedItem {
       author: string;
     };
     message?: string;
-    user?: string;
+    user_name?: string;
   };
 }
 
@@ -51,8 +51,11 @@ export default function RealTimeFeed() {
 
       eventSource.onmessage = (event) => {
         try {
+          console.log("OnMessage Frontend feed");
           const feedItem: FeedItem = JSON.parse(event.data);
           feedItem.timestamp = new Date(feedItem.timestamp);
+
+          console.log(`Frontend got feed: ${JSON.stringify(feedItem)}`);
 
           setFeedItems((prev) => {
             // Add new item at the beginning and keep only last 50 items
@@ -92,7 +95,7 @@ export default function RealTimeFeed() {
           id: `create-${Date.now()}`,
           type: 'create',
           timestamp: new Date(),
-          data: { quote: data.quote, user: data.user }
+          data: { quote: data.quote, user_name: data.user_name }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
       });
@@ -106,7 +109,7 @@ export default function RealTimeFeed() {
           id: `update-${Date.now()}`,
           type: 'update',
           timestamp: new Date(),
-          data: { quote: data.quote, user: data.user }
+          data: { quote: data.quote, user_name: data.user_name }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
       });
@@ -122,7 +125,7 @@ export default function RealTimeFeed() {
           timestamp: new Date(),
           data: {
             quote: { id: data.id, text: data.text || 'Deleted quote', author: data.author || 'Unknown' },
-            user: data.user
+            user_name: data.user_name
           }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
@@ -137,7 +140,7 @@ export default function RealTimeFeed() {
           id: `random-${Date.now()}`,
           type: 'random',
           timestamp: new Date(),
-          data: { quote: data.quote, user: data.user }
+          data: { quote: data.quote, user_name: data.user_name }
         };
         setFeedItems((prev) => [feedItem, ...prev].slice(0, 50));
       });
@@ -203,7 +206,7 @@ export default function RealTimeFeed() {
   };
 
   const getFeedItemMessage = (item: FeedItem) => {
-    const user = item.data.user || 'John Doe';
+    const user = item.data.user_name || 'unknown';
     switch (item.type) {
       case 'create':
         return `${user} added a new quote`;
